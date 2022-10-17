@@ -156,7 +156,8 @@ int parse_parameters(int argn, char **argv,
 
         struct arg_int *cluster_upperbound                   = arg_int0(NULL, "cluster_upperbound", NULL, "Set a size-constraint on the size of a cluster. Default: none");
         struct arg_int *label_propagation_iterations         = arg_int0(NULL, "label_propagation_iterations", NULL, "Set the number of label propgation iterations. Default: 10.");
-
+        struct arg_lit *degree_instead_of_size               = arg_lit0(NULL, "degree_instead_of_size", "Uses degree based constraint instead of size constraint for the constraint version of label propagation.");
+        
         struct arg_int *max_initial_ns_tries                 = arg_int0(NULL, "max_initial_ns_tries", NULL, "Number of NS tries during initial partitioning.");
         struct arg_int *max_flow_improv_steps                = arg_int0(NULL, "max_flow_improv_steps", NULL, "Maximum number of tries to improve a node separator using flows.");
         struct arg_lit *most_balanced_flows_node_sep         = arg_lit0(NULL, "most_balanced_flows_node_sep", "(Default: disabled)");
@@ -328,6 +329,7 @@ int parse_parameters(int argn, char **argv,
 #elif defined MODE_LABELPROPAGATION
                 cluster_upperbound,
                 label_propagation_iterations,
+                degree_instead_of_size, // TODO: consider adding it to MODE_ΚΑFFPAE alsox
                 filename_output, 
 #elif defined MODE_ILPIMPROVE
                 k,  filename_output, imbalance,
@@ -731,7 +733,7 @@ int parse_parameters(int argn, char **argv,
         if(enforce_balance->count > 0) {
                 partition_config.kaffpa_perfectly_balance = true;
         }
-
+        
         if(mh_plain_repetitions->count > 0) {
                 partition_config.mh_plain_repetitions = true;
         }
@@ -1126,7 +1128,11 @@ int parse_parameters(int argn, char **argv,
         } else {
                 partition_config.cluster_upperbound = std::numeric_limits< NodeWeight >::max()/2;
         }
-
+        // FOR LP //
+        if(degree_instead_of_size->count > 0) {
+                partition_config.degree_instead_of_size = true;
+        }
+        
         if (dissection_rec_limit->count > 0) {
                 partition_config.dissection_rec_limit = dissection_rec_limit->ival[0];
         } else {

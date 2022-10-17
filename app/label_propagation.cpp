@@ -56,7 +56,7 @@ int main(int argn, char **argv) {
         
         partition_config.upper_bound_partition = partition_config.cluster_upperbound+1;
         partition_config.cluster_coarsening_factor = 1;
-        partition_config.degree_instead_of_size = true;
+        //partition_config.degree_instead_of_size = true;
         if (partition_config.degree_instead_of_size)
                 std::cout << "Favor degree instead of size for additional constraint. " << std::endl;
         partition_config.k = 1;
