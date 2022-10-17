@@ -97,8 +97,14 @@ class size_constraint_label_propagation : public matching {
                 void label_propagation(const PartitionConfig & partition_config, 
                                 graph_access & G, 
                                 std::vector<NodeWeight> & cluster_id,
-                                NodeID & number_of_blocks ); 
+                                NodeID & number_of_blocks );
 
+                void fro_constraint_label_propagation(const PartitionConfig & partition_config, 
+                                                      graph_access & G, 
+                                                      const NodeWeight & block_upperbound,
+                                                      std::vector<NodeWeight> & cluster_id,  
+                                                      NodeID & no_of_blocks);
+                        
 };
 
 

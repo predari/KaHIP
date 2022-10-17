@@ -55,7 +55,14 @@ void size_constraint_label_propagation::match_internal(const PartitionConfig & p
 
         std::vector<NodeWeight> cluster_id(G.number_of_nodes());
         NodeWeight block_upperbound = ceil(partition_config.upper_bound_partition/(double)partition_config.cluster_coarsening_factor);
-
+        // checking parameters
+        PRINT(std::cout<< " Upper bound for blocks during partitoning = " << block_upperbound << std::endl;);
+        PRINT(std::cout<< " Upper bound for blocks input = " << partition_config.upper_bound_partition << std::endl;)
+        PRINT(std::cout<< " Partition_config coarsening factor = " << partition_config.cluster_coarsening_factor << std::endl;)
+        PRINT(std::cout<< " Partition_config k = " << partition_config.k << std::endl;);
+        if(partition_config.cluster_coarsening_factor) 
+                PRINT(std::cout<< " Partition_config degree instead of size " << std::endl;);
+        
         label_propagation( partition_config, G, block_upperbound, cluster_id, no_of_coarse_vertices);
         create_coarsemapping( partition_config, G, cluster_id, coarse_mapping);
 }
@@ -126,10 +133,96 @@ void size_constraint_label_propagation::label_propagation(const PartitionConfig 
                                                          graph_access & G, 
                                                          std::vector<NodeWeight> & cluster_id, 
                                                          NodeID & no_of_blocks ) {
-        NodeWeight block_upperbound = ceil(partition_config.upper_bound_partition/(double)partition_config.cluster_coarsening_factor);
+        //NodeWeight block_upperbound = ceil(partition_config.upper_bound_partition/(double)partition_config.cluster_coarsening_factor);
+        NodeWeight block_upperbound;
 
-        label_propagation( partition_config, G, block_upperbound, cluster_id, no_of_blocks);
+        if(partition_config.degree_instead_of_size) {
+
+                EdgeWeight total_fro = 2* G.number_of_edges();
+                forall_nodes(G, node) {
+                        total_fro += G.getNodeDegree(node)*G.getNodeDegree(node); //G.getNodeWeightedDegree(node);
+                } endfor
+                                                    
+                block_upperbound = ceil(total_fro/(double)partition_config.cluster_coarsening_factor);
+                fro_constraint_label_propagation( partition_config, G, block_upperbound, cluster_id, no_of_blocks);
+        }
+        else {
+                block_upperbound = ceil(partition_config.upper_bound_partition/(double)partition_config.cluster_coarsening_factor);
+                label_propagation( partition_config, G, block_upperbound, cluster_id, no_of_blocks);
+        }
 }
+
+void size_constraint_label_propagation::fro_constraint_label_propagation(const PartitionConfig & partition_config, 
+                                                                         graph_access & G, 
+                                                                         const NodeWeight & block_upperbound,
+                                                                         std::vector<NodeWeight> & cluster_id,  
+                                                                         NodeID & no_of_blocks) {
+        
+        
+        
+        // in this case the _matching paramter is not used 
+        // coarse_mappng stores cluster id and the mapping (it is identical)
+        std::vector<PartitionID> hash_map(G.number_of_nodes(),0);
+        std::vector<NodeID> permutation(G.number_of_nodes());
+        // cluster_sizes store the accumulated degree weight
+        std::vector<EdgeWeight> cluster_sizes(G.number_of_nodes());
+        cluster_id.resize(G.number_of_nodes());
+
+        forall_nodes(G, node) {
+                //cluster_sizes[node] = G.getNodeWeight(node);
+                cluster_sizes[node] = G.getNodeDegree(node)*(G.getNodeDegree(node)+1); //G.getNodeWeightedDegree(node);
+                cluster_id[node]    = node;
+        } endfor
+        
+        node_ordering n_ordering;
+        n_ordering.order_nodes(partition_config, G, permutation);
+
+        for( int j = 0; j < partition_config.label_iterations; j++) {
+                unsigned int change_counter = 0;
+                forall_nodes(G, i) {
+                        NodeID node = permutation[i];
+                        //now move the node to the cluster that is most common in the neighborhood
+
+                        forall_out_edges(G, e, node) {
+                                NodeID target = G.getEdgeTarget(e);
+                                hash_map[cluster_id[target]]+=G.getEdgeWeight(e);
+                        } endfor
+
+                        //second sweep for finding max and resetting array
+                        PartitionID max_block = cluster_id[node];
+                        PartitionID my_block  = cluster_id[node];
+
+                        PartitionID max_value = 0;
+                        forall_out_edges(G, e, node) {
+                                NodeID target             = G.getEdgeTarget(e);
+                                PartitionID cur_block     = cluster_id[target];
+                                PartitionID cur_value     = hash_map[cur_block];
+                                if((cur_value > max_value  || (cur_value == max_value && random_functions::nextBool())) 
+                                   //&& (cluster_sizes[cur_block] + G.getNodeWeight(node) < block_upperbound || cur_block == my_block)
+                                && (cluster_sizes[cur_block] +  G.getNodeDegree(node)*(G.getNodeDegree(node)+1) < block_upperbound || cur_block == my_block)
+                                  
+                                && (!partition_config.graph_allready_partitioned || G.getPartitionIndex(node) == G.getPartitionIndex(target))
+                                && (!partition_config.combine || G.getSecondPartitionIndex(node) == G.getSecondPartitionIndex(target)))
+                                {
+                                        max_value = cur_value;
+                                        max_block = cur_block;
+                                }
+
+                                hash_map[cur_block] = 0;
+                        } endfor
+
+                        cluster_sizes[cluster_id[node]]  -= G.getNodeDegree(node)*(G.getNodeDegree(node)+1);
+                        cluster_sizes[max_block]         += G.getNodeDegree(node)*(G.getNodeDegree(node)+1);
+                        //cluster_sizes[cluster_id[node]]  -=  G.getNodeWeight(node);
+                        //cluster_sizes[max_block]         += G.getNodeWeight(node);
+                        change_counter                   += (cluster_id[node] != max_block);
+                        cluster_id[node]                  = max_block;
+                } endfor
+        }
+
+        remap_cluster_ids( partition_config, G, cluster_id, no_of_blocks);
+}
+
 
 void size_constraint_label_propagation::label_propagation(const PartitionConfig & partition_config, 
                                                          graph_access & G, 

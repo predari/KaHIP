@@ -50,12 +50,15 @@ int main(int argn, char **argv) {
         std::cout <<  "graph has " <<  G.number_of_nodes() <<  " nodes and " <<  G.number_of_edges() <<  " edges"  << std::endl;
         if( partition_config.cluster_upperbound == std::numeric_limits< NodeWeight >::max()/2 ) {
                 std::cout <<  "no size-constrained specified" << std::endl;
-        } else {
+        } else{ 
                 std::cout <<  "size-constrained set to " <<  partition_config.cluster_upperbound << std::endl;
         }
         
         partition_config.upper_bound_partition = partition_config.cluster_upperbound+1;
         partition_config.cluster_coarsening_factor = 1;
+        partition_config.degree_instead_of_size = true;
+        if (partition_config.degree_instead_of_size)
+                std::cout << "Favor degree instead of size for additional constraint. " << std::endl;
         partition_config.k = 1;
         srand(partition_config.seed);
         random_functions::setSeed(partition_config.seed);
@@ -74,10 +77,20 @@ int main(int argn, char **argv) {
         forall_nodes(G, node) {
                 G.setPartitionIndex(node, cluster_id[node]);
         } endfor
-        
+
+                  
         G.set_partition_count(no_blocks);
         std::cout << "number of clusters/blocks  " << no_blocks << std::endl;
         std::cout << "number of edges between clusters " << qm.edge_cut(G)                 << std::endl;
+        std::cout << "balance percentage based on size " << qm.balance(G)                 << std::endl;
+        std::cout << "balance percentage based on frobenius " << qm.fro_balance(G)                 << std::endl;
+        std::vector<PartitionID> part_weights = qm.weights_per_cluster(G, partition_config.degree_instead_of_size);
+        std::cout << "Part weights ";
+       
+        forall_blocks(G, p) {
+                std::cout <<  part_weights[p] << " ";
+        } endfor
+        std::cout << std::endl;
 
         // write the clustering  to the disc 
         std::stringstream filename;

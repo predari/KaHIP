@@ -352,6 +352,8 @@ struct PartitionConfig
         //=======================================
         NodeWeight cluster_upperbound;
 
+        bool degree_instead_of_size;
+        
         //=======================================
         //=========INITIAL PARTITIONING==========
         //=======================================

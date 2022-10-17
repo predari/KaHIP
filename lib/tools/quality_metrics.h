@@ -30,6 +30,8 @@ public:
         int boundary_nodes(graph_access & G);
         NodeWeight separator_weight(graph_access& G);
         double balance(graph_access & G);
+        double fro_balance(graph_access & G);
+        std::vector<PartitionID> weights_per_cluster(graph_access& G, bool degree_instead_of_size);
         double balance_edges(graph_access & G);
         double balance_separator(graph_access & G);
         double edge_balance(graph_access &G, const std::vector<PartitionID> &edge_partition);

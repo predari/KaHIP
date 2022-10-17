@@ -489,13 +489,16 @@ inline void configuration::standard( PartitionConfig & partition_config ) {
         partition_config.ilp_limit_nonzeroes = 5000000;
         partition_config.ilp_overlap_runs = 3;
         partition_config.ilp_timeout = 7200;
+
+        partition_config.degree_instead_of_size = false;
 }
 
 inline void configuration::standardsnw( PartitionConfig & partition_config ) {
         partition_config.matching_type        = CLUSTER_COARSENING;
         partition_config.stop_rule            = STOP_RULE_MULTIPLE_K;
         partition_config.num_vert_stop_factor = 5000;
-
+       
+        
         if(2 <= partition_config.k && partition_config.k <= 3) {
                 partition_config.number_of_clusterings = 18;
         } else if(4 <= partition_config.k && partition_config.k <= 7) {
@@ -513,6 +516,8 @@ inline void configuration::standardsnw( PartitionConfig & partition_config ) {
                 partition_config.balance_factor       = 0.00;
         }
 
+
+        partition_config.degree_instead_of_size = false;
 
 }
 

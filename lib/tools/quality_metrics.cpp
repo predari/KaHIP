@@ -262,6 +262,54 @@ NodeWeight quality_metrics::separator_weight(graph_access& G) {
         return separator_size;
 }
 
+
+double quality_metrics::fro_balance(graph_access& G) {
+        std::vector<PartitionID> part_weights(G.get_partition_count(), 0);
+
+        double overallWeight = 2* G.number_of_edges();
+
+        forall_nodes(G, n) {
+                PartitionID curPartition = G.getPartitionIndex(n);
+                part_weights[curPartition] += G.getNodeDegree(n)*(G.getNodeDegree(n)+1);
+                overallWeight += G.getNodeDegree(n)*G.getNodeDegree(n);
+        } endfor
+
+        double balance_part_weight = ceil(overallWeight / (double)G.get_partition_count());
+        double cur_max             = -1;
+
+        forall_blocks(G, p) {
+                double cur = part_weights[p];
+                if (cur > cur_max) {
+                        cur_max = cur;
+                }
+        } endfor
+
+        double percentage = cur_max/balance_part_weight;
+        return percentage;
+}
+
+
+std::vector<PartitionID> quality_metrics::weights_per_cluster(graph_access& G, bool degree_instead_of_size) {
+        std::vector<PartitionID> part_weights(G.get_partition_count(), 0);
+
+        double overallWeight = 0;
+
+        forall_nodes(G, n) {
+                PartitionID curPartition = G.getPartitionIndex(n);
+                if(degree_instead_of_size) {
+                        part_weights[curPartition] += G.getNodeDegree(n);
+                        overallWeight += G.getNodeDegree(n);
+                }
+                else {
+                        part_weights[curPartition] += G.getNodeWeight(n);
+                        overallWeight += G.getNodeWeight(n);
+                }
+        } endfor
+
+        return part_weights;
+}
+
+
 double quality_metrics::balance(graph_access& G) {
         std::vector<PartitionID> part_weights(G.get_partition_count(), 0);
 
