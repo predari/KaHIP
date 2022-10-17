@@ -58,7 +58,7 @@ int main(int argn, char **argv) {
         partition_config.cluster_coarsening_factor = 1;
         //partition_config.degree_instead_of_size = true;
         if (partition_config.degree_instead_of_size)
-                std::cout << " Degree based constraint instead of size for the constraint label propagation. " << std::endl;
+                std::cout << "Degree based constraint instead of size for the constraint label propagation. " << std::endl;
         partition_config.k = 1;
         srand(partition_config.seed);
         random_functions::setSeed(partition_config.seed);
